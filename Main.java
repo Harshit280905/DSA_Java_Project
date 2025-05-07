@@ -255,8 +255,40 @@ class BookingSystem {
         return bookingHistory.isEmpty();
     }
 
-    public BookingRecord popLastBooking() {
-        return bookingHistory.pop();
+    // Remove the popLastBooking method and add cancelSpecificBooking
+
+    public void cancelSpecificBooking() {
+        if (bookingHistory.isEmpty()) {
+            System.out.println("No bookings to cancel.");
+            return;
+        }
+
+        System.out.println("Select a booking to cancel:");
+        for (int i = 0; i < bookingHistory.size(); i++) {
+            BookingRecord record = bookingHistory.get(i);
+            System.out.println((i + 1) + ". Passenger: " + record.passengerName +
+                               " | Flight: " + record.flight.flightNumber +
+                               " | Route: " + record.flight.source + " -> " + record.flight.destination +
+                               " | Departure: " + record.flight.departureTime);
+        }
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter the number of the booking to cancel: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        if (choice < 1 || choice > bookingHistory.size()) {
+            System.out.println("Invalid choice.");
+            return;
+        }
+
+        BookingRecord record = bookingHistory.remove(choice - 1);
+        record.flight.cancelSeat();
+        System.out.println("Booking canceled:");
+        System.out.println("Passenger: " + record.passengerName);
+        System.out.println("Flight: " + record.flight.flightNumber + " from " +
+                           record.flight.source + " to " + record.flight.destination +
+                           " at " + record.flight.departureTime);
     }
 
     // View bookings with optional filter by passenger name
@@ -383,17 +415,7 @@ public class Main {
                     system.viewMyBookings();
                     break;
                 case 4:
-                    if (!system.bookingHistoryIsEmpty()) {
-                        BookingSystem.BookingRecord record = system.popLastBooking();
-                        record.flight.cancelSeat();
-                        System.out.println("Last booking canceled:");
-                        System.out.println("Passenger: " + record.passengerName);
-                        System.out.println("Flight: " + record.flight.flightNumber + " from " +
-                                           record.flight.source + " to " + record.flight.destination +
-                                           " at " + record.flight.departureTime);
-                    } else {
-                        System.out.println("No booking to cancel.");
-                    }
+                    system.cancelSpecificBooking();
                     break;
                 case 5:
                     System.out.println("Thank you for using the system!");
