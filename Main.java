@@ -66,6 +66,18 @@ class FlightNode {
 
 class BookingSystem {
     private FlightNode head;
+    private Stack<BookingRecord> bookingHistory = new Stack<>();
+
+    // Nested BookingRecord class
+    static class BookingRecord {
+        Flight flight;
+        String passengerName;
+
+        BookingRecord(Flight flight, String passengerName) {
+            this.flight = flight;
+            this.passengerName = passengerName;
+        }
+    }
 
     public void addFlight(Flight flight) {
         FlightNode newNode = new FlightNode(flight);
@@ -220,6 +232,7 @@ class BookingSystem {
                 String passengerLabel = name + " (Passenger " + i + ", Age " + age + ")";
                 int result = selectedFlight.bookSeat(passengerLabel, 1);
                 if (result == 1) {
+                    bookingHistory.push(new BookingRecord(selectedFlight, passengerLabel));
                     booked++;
                     totalCost += price;
                     if (age <= 12) children++;
@@ -236,6 +249,49 @@ class BookingSystem {
         System.out.println("Infants (free): " + infants);
         System.out.println("Total booked: " + booked);
         System.out.println("Total cost: ₹" + totalCost);
+    }
+
+    public boolean bookingHistoryIsEmpty() {
+        return bookingHistory.isEmpty();
+    }
+
+    public BookingRecord popLastBooking() {
+        return bookingHistory.pop();
+    }
+
+    // View bookings with optional filter by passenger name
+    public void viewMyBookings() {
+        if (bookingHistory.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Do you want to filter by passenger name? (yes/no): ");
+        String filterChoice = scanner.nextLine().trim().toLowerCase();
+
+        String filterName = "";
+        if (filterChoice.equals("yes")) {
+            System.out.print("Enter passenger name to filter: ");
+            filterName = scanner.nextLine().trim().toLowerCase();
+        }
+
+        boolean found = false;
+        System.out.println("Your Bookings:");
+        for (BookingRecord record : bookingHistory) {
+            String nameOnly = record.passengerName.split("\\(Passenger")[0].trim().toLowerCase();
+            if (filterName.isEmpty() || nameOnly.equals(filterName)) {
+                System.out.println("Passenger: " + record.passengerName +
+                    " | Flight: " + record.flight.flightNumber +
+                    " | Route: " + record.flight.source + " -> " + record.flight.destination +
+                    " | Departure: " + record.flight.departureTime);
+                found = true;
+            }
+        }
+
+        if (!found) {
+            System.out.println("No matching bookings found.");
+        }
     }
 }
 
@@ -307,7 +363,7 @@ public class Main {
             System.out.println("\n--- Flight Booking System ---");
             System.out.println("1. View Domestic Flights");
             System.out.println("2. View International Flights");
-            System.out.println("3. Book Flight");
+            System.out.println("3. View My Booking");
             System.out.println("4. Cancel Last Booking");
             System.out.println("5. Exit");
             System.out.print("Enter your choice: ");
@@ -324,63 +380,17 @@ public class Main {
                     system.displayFlightsByType(true); // Pass true for international
                     break;
                 case 3:
-                    system.displayFlights();
-                    System.out.print("Enter flight number to book (1-N): ");
-                    int flightChoice = scanner.nextInt() - 1;
-                    scanner.nextLine(); // consume leftover newline
-                    System.out.print("Enter your name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter number of tickets: ");
-                    int numTickets = scanner.nextInt();
-
-                    // Ask for ID proof
-                    scanner.nextLine(); // consume leftover newline after nextInt()
-                    System.out.print("Enter ID proof (e.g., Passport/ID card number): ");
-                    String idProof = scanner.nextLine();
-
-                    int adults = 0, children = 0, infants = 0, booked = 0;
-                    double totalCost = 0.0;
-                    Flight flightToBook = system.getFlight(flightChoice);
-                    if (flightToBook != null) {
-                        for (int i = 1; i <= numTickets; i++) {
-                            System.out.print("Enter age for passenger " + i + ": ");
-                            int age = scanner.nextInt();
-                            double price = flightToBook.getPrice(age);
-                            if (age <= 2) {
-                                infants++;
-                                System.out.println("Infant (0-2) — ticket not required.");
-                            } else {
-                                String passengerLabel = name + " (Passenger " + i + ", Age " + age + ")";
-                                int result = flightToBook.bookSeat(passengerLabel, 1);
-                                if (result == 1) {
-                                    bookingHistory.push(flightChoice);
-                                    booked++;
-                                    totalCost += price;
-                                    if (age <= 12) children++;
-                                    else adults++;
-                                } else {
-                                    System.out.println("Flight full. " + passengerLabel + " added to waitlist.");
-                                }
-                            }
-                        }
-
-                        System.out.println("Booking Summary:");
-                        System.out.println("Adults booked: " + adults);
-                        System.out.println("Children booked: " + children);
-                        System.out.println("Infants (free): " + infants);
-                        System.out.println("Total booked: " + booked);
-                        System.out.println("Total cost: ₹" + totalCost);
-                        System.out.println("ID proof provided: " + idProof);
-                    }
+                    system.viewMyBookings();
                     break;
                 case 4:
-                    if (!bookingHistory.isEmpty()) {
-                        int lastBooked = bookingHistory.pop();
-                        Flight flight = system.getFlight(lastBooked);
-                        if (flight != null) {
-                            flight.cancelSeat();
-                            System.out.println("Last booking canceled.");
-                        }
+                    if (!system.bookingHistoryIsEmpty()) {
+                        BookingSystem.BookingRecord record = system.popLastBooking();
+                        record.flight.cancelSeat();
+                        System.out.println("Last booking canceled:");
+                        System.out.println("Passenger: " + record.passengerName);
+                        System.out.println("Flight: " + record.flight.flightNumber + " from " +
+                                           record.flight.source + " to " + record.flight.destination +
+                                           " at " + record.flight.departureTime);
                     } else {
                         System.out.println("No booking to cancel.");
                     }
