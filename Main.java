@@ -190,8 +190,7 @@ class BookingSystem {
             if (current.flight.source.equalsIgnoreCase(sourceCity) &&
                 current.flight.destination.equalsIgnoreCase(destinationCity)) {
                 matchingFlights.add(current.flight);
-                System.out.println(matchingFlights.size() + ". Flight No: " + current.flight.flightNumber +
-                    " | Departure: " + current.flight.departureTime +
+                System.out.println(matchingFlights.size() + ". Departure: " + current.flight.departureTime +
                     " | Available Seats: " + current.flight.availableSeats +
                     " | Price: ₹" + current.flight.basePrice);
             }
@@ -212,6 +211,11 @@ class BookingSystem {
         System.out.print("Enter number of tickets: ");
         int numTickets = scanner.nextInt();
         scanner.nextLine(); // consume leftover newline
+
+        if (numTickets > selectedFlight.availableSeats) {
+            System.out.println("Not enough seats available. Only " + selectedFlight.availableSeats + " seats are available.");
+            return;
+        }
 
         int adults = 0, children = 0, infants = 0, booked = 0;
         double totalCost = 0.0;
@@ -282,7 +286,14 @@ class BookingSystem {
             return;
         }
 
-        BookingRecord record = bookingHistory.remove(choice - 1);
+        BookingRecord record = bookingHistory.get(choice - 1);
+        System.out.print("Are you sure you want to cancel this booking? (yes/no): ");
+        String confirmation = scanner.nextLine().trim().toLowerCase();
+        if (!confirmation.equals("yes")) {
+            System.out.println("Cancellation aborted.");
+            return;
+        }
+        bookingHistory.remove(choice - 1);
         record.flight.cancelSeat();
         System.out.println("Booking canceled:");
         System.out.println("Passenger: " + record.passengerName);
