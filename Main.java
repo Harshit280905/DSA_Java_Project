@@ -37,7 +37,7 @@ class Flight {
         availableSeats++;
         if (!waitlist.isEmpty()) {
             String nextPassenger = waitlist.poll();
-            availableSeats--; // Seat taken by waitlisted passenger
+            availableSeats--; 
             System.out.println("Booking confirmed for waitlisted passenger: " + nextPassenger);
         }
     }
@@ -53,7 +53,6 @@ class Flight {
     }
 }
 
-// Node class for linked list
 class FlightNode {
     Flight flight;
     FlightNode next;
@@ -68,7 +67,6 @@ class BookingSystem {
     private FlightNode head;
     private Stack<BookingRecord> bookingHistory = new Stack<>();
 
-    // Nested BookingRecord class
     static class BookingRecord {
         Flight flight;
         String passengerName;
@@ -124,7 +122,6 @@ class BookingSystem {
 
         Scanner scanner = new Scanner(System.in);
 
-        // Define available cities for source and destination
         List<String> domesticCities = Arrays.asList("Delhi", "Mumbai", "Chennai", "Kolkata", "Bangalore", "Hyderabad", "Jaipur", "Ahmedabad", "Goa");
         List<String> internationalCities = Arrays.asList("Singapore", "London", "Dubai", "Bangkok", "New York", "Paris", "Tokyo", "Toronto");
 
@@ -153,10 +150,9 @@ class BookingSystem {
 
         System.out.print("Select destination city (enter the number): ");
         int destinationChoice = scanner.nextInt();
-        scanner.nextLine(); // consume newline
+        scanner.nextLine(); 
         String destinationCity = availableCities.get(destinationChoice - 1);
 
-        // Collect source cities with flights to the selected destination
         Set<String> validSources = new HashSet<>();
         current = head;
         while (current != null) {
@@ -171,7 +167,6 @@ class BookingSystem {
             return;
         }
 
-        // Let user choose a source city
         List<String> sourceOptions = new ArrayList<>(validSources);
         System.out.println("Available source cities for " + destinationCity + ":");
         for (int i = 0; i < sourceOptions.size(); i++) {
@@ -179,10 +174,9 @@ class BookingSystem {
         }
         System.out.print("Select source city (enter the number): ");
         int sourceChoice = scanner.nextInt();
-        scanner.nextLine(); // consume newline
+        scanner.nextLine(); 
         String sourceCity = sourceOptions.get(sourceChoice - 1);
 
-        // Display flights matching the source and destination
         List<Flight> matchingFlights = new ArrayList<>();
         current = head;
         System.out.println("Flights from " + sourceCity + " to " + destinationCity + ":");
@@ -204,13 +198,13 @@ class BookingSystem {
 
         System.out.print("Select flight to book (enter the number): ");
         int flightChoice = scanner.nextInt();
-        scanner.nextLine(); // consume newline
+        scanner.nextLine(); 
 
         Flight selectedFlight = matchingFlights.get(flightChoice - 1);
 
         System.out.print("Enter number of tickets: ");
         int numTickets = scanner.nextInt();
-        scanner.nextLine(); // consume leftover newline
+        scanner.nextLine(); 
 
         if (numTickets > selectedFlight.availableSeats) {
             System.out.println("Not enough seats available. Only " + selectedFlight.availableSeats + " seats are available.");
@@ -227,7 +221,7 @@ class BookingSystem {
             String idProof = scanner.nextLine();
             System.out.print("Enter age for passenger " + i + ": ");
             int age = scanner.nextInt();
-            scanner.nextLine(); // consume leftover newline
+            scanner.nextLine(); 
             double price = selectedFlight.getPrice(age);
             if (age <= 2) {
                 infants++;
@@ -259,7 +253,6 @@ class BookingSystem {
         return bookingHistory.isEmpty();
     }
 
-    // Remove the popLastBooking method and add cancelSpecificBooking
 
     public void cancelSpecificBooking() {
         if (bookingHistory.isEmpty()) {
@@ -279,7 +272,7 @@ class BookingSystem {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter the number of the booking to cancel: ");
         int choice = scanner.nextInt();
-        scanner.nextLine(); // consume newline
+        scanner.nextLine();
 
         if (choice < 1 || choice > bookingHistory.size()) {
             System.out.println("Invalid choice.");
@@ -302,7 +295,6 @@ class BookingSystem {
                            " at " + record.flight.departureTime);
     }
 
-    // View bookings with optional filter by passenger name
     public void viewMyBookings() {
         if (bookingHistory.isEmpty()) {
             System.out.println("No bookings found.");
@@ -348,6 +340,8 @@ public class Main {
         system.addFlight(new Flight("AI102", "Bangalore", "Chennai", 4, 4000, "09:30 AM"));
         system.addFlight(new Flight("AI103", "Kolkata", "Delhi", 3, 4800, "10:45 AM"));
         system.addFlight(new Flight("AI104", "Hyderabad", "Ahmedabad", 5, 4200, "01:00 PM"));
+        // Ensure at least two flights to Ahmedabad
+        system.addFlight(new Flight("AI229", "Delhi", "Ahmedabad", 4, 4300, "08:40 AM"));
         system.addFlight(new Flight("AI105", "Jaipur", "Goa", 6, 4500, "02:15 PM"));
         system.addFlight(new Flight("AI201", "Delhi", "Dubai", 5, 15000, "06:00 AM"));
         system.addFlight(new Flight("AI202", "Mumbai", "Singapore", 4, 18000, "11:30 AM"));
@@ -371,7 +365,6 @@ public class Main {
         system.addFlight(new Flight("AI113", "Bangalore", "Delhi", 4, 4900, "04:45 PM"));
         system.addFlight(new Flight("AI114", "Goa", "Delhi", 5, 5100, "08:25 PM"));
 
-        // Add more international flights with multiple source cities
         system.addFlight(new Flight("AI209", "Bangalore", "Dubai", 4, 16000, "05:55 AM"));
         system.addFlight(new Flight("AI210", "Hyderabad", "Dubai", 3, 16500, "09:20 PM"));
 
@@ -384,16 +377,16 @@ public class Main {
         system.addFlight(new Flight("AI215", "Delhi", "New York", 2, 45500, "11:45 PM"));
         system.addFlight(new Flight("AI216", "Kolkata", "New York", 3, 46000, "07:35 AM"));
 
-        // Additional flights for Goa and Singapore with different sources and times
         system.addFlight(new Flight("AI217", "Delhi", "Goa", 4, 4600, "06:10 AM"));
         system.addFlight(new Flight("AI218", "Chandigarh", "Goa", 3, 4800, "12:30 PM"));
         system.addFlight(new Flight("AI219", "Jaipur", "Goa", 5, 4700, "07:45 PM"));
+        // Ensure at least two flights to Chandigarh
+        system.addFlight(new Flight("AI230", "Mumbai", "Chandigarh", 3, 4500, "06:45 AM"));
 
         system.addFlight(new Flight("AI220", "Chandigarh", "Singapore", 3, 17500, "09:30 AM"));
         system.addFlight(new Flight("AI221", "Jaipur", "Singapore", 2, 17800, "06:45 PM"));
         system.addFlight(new Flight("AI222", "Delhi", "Singapore", 2, 17200, "11:15 PM"));
 
-        // More flights to Goa and Singapore from different sources
         system.addFlight(new Flight("AI223", "Bangalore", "Goa", 4, 4700, "01:20 PM"));
         system.addFlight(new Flight("AI224", "Hyderabad", "Goa", 3, 4600, "03:40 PM"));
         system.addFlight(new Flight("AI225", "Kolkata", "Goa", 5, 4800, "05:15 PM"));
@@ -411,16 +404,16 @@ public class Main {
             System.out.println("5. Exit");
             System.out.print("Enter your choice: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // consume newline
+            scanner.nextLine(); 
 
             switch (choice) {
                 case 1:
                     System.out.println("\n--- Domestic Flights ---");
-                    system.displayFlightsByType(false); // Pass false for domestic
+                    system.displayFlightsByType(false); 
                     break;
                 case 2:
                     System.out.println("\n--- International Flights ---");
-                    system.displayFlightsByType(true); // Pass true for international
+                    system.displayFlightsByType(true); 
                     break;
                 case 3:
                     system.viewMyBookings();
