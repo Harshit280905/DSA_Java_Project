@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 class Flight {
@@ -301,21 +305,11 @@ class BookingSystem {
             return;
         }
 
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Do you want to filter by passenger name? (yes/no): ");
-        String filterChoice = scanner.nextLine().trim().toLowerCase();
-
-        String filterName = "";
-        if (filterChoice.equals("yes")) {
-            System.out.print("Enter passenger name to filter: ");
-            filterName = scanner.nextLine().trim().toLowerCase();
-        }
-
         boolean found = false;
         System.out.println("Your Bookings:");
         for (BookingRecord record : bookingHistory) {
             String nameOnly = record.passengerName.split("\\(Passenger")[0].trim().toLowerCase();
-            if (filterName.isEmpty() || nameOnly.equals(filterName)) {
+            {
                 System.out.println("Passenger: " + record.passengerName +
                     " | Flight: " + record.flight.flightNumber +
                     " | Route: " + record.flight.source + " -> " + record.flight.destination +
@@ -336,11 +330,60 @@ public class Main {
         BookingSystem system = new BookingSystem();
         Stack<Integer> bookingHistory = new Stack<>();
 
+        // Registration prompt before reading users file
+        System.out.print("Do you have an account? (yes/no): ");
+        String hasAccount = scanner.nextLine().trim().toLowerCase();
+
+        if (hasAccount.equals("no")) {
+            System.out.print("Enter new username: ");
+            String newUsername = scanner.nextLine().trim();
+            System.out.print("Enter new password: ");
+            String newPassword = scanner.nextLine().trim();
+            try (FileWriter userWriter = new FileWriter("users.txt", true)) {
+                userWriter.write(newUsername + "," + newPassword + "\n");
+                System.out.println("Account created successfully. You can now log in.");
+            } catch (IOException e) {
+                System.out.println("Error creating account: " + e.getMessage());
+                return;
+            }
+        }
+
+        Map<String, String> validUsers = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader("users.txt"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 2) {
+                    validUsers.put(parts[0].trim(), parts[1].trim());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading users file: " + e.getMessage());
+            return;
+        }
+
+        System.out.println("Welcome to the Flight Booking System");
+        System.out.print("Enter username: ");
+        String username = scanner.nextLine().trim();
+        System.out.print("Enter password: ");
+        String password = scanner.nextLine().trim();
+
+        if (!validUsers.containsKey(username) || !validUsers.get(username).equals(password)) {
+            System.out.println("Invalid credentials. Exiting system.");
+            return;
+        }
+
+        System.out.println("Login successful. Welcome, " + username + "!");
+        try (FileWriter logWriter = new FileWriter("login_log.txt", true)) {
+            logWriter.write("User '" + username + "' logged in successfully at " + new Date() + "\n");
+        } catch (IOException e) {
+            System.out.println("Error logging login information: " + e.getMessage());
+        }
+
         system.addFlight(new Flight("AI101", "Delhi", "Mumbai", 5, 5000, "08:00 AM"));
         system.addFlight(new Flight("AI102", "Bangalore", "Chennai", 4, 4000, "09:30 AM"));
         system.addFlight(new Flight("AI103", "Kolkata", "Delhi", 3, 4800, "10:45 AM"));
         system.addFlight(new Flight("AI104", "Hyderabad", "Ahmedabad", 5, 4200, "01:00 PM"));
-        // Ensure at least two flights to Ahmedabad
         system.addFlight(new Flight("AI229", "Delhi", "Ahmedabad", 4, 4300, "08:40 AM"));
         system.addFlight(new Flight("AI105", "Jaipur", "Goa", 6, 4500, "02:15 PM"));
         system.addFlight(new Flight("AI201", "Delhi", "Dubai", 5, 15000, "06:00 AM"));
@@ -352,7 +395,6 @@ public class Main {
         system.addFlight(new Flight("AI207", "Delhi", "Tokyo", 3, 37000, "12:00 PM"));
         system.addFlight(new Flight("AI208", "Mumbai", "Toronto", 2, 39000, "08:00 PM"));
 
-        // Add more domestic flights with multiple source cities
         system.addFlight(new Flight("AI106", "Chennai", "Mumbai", 6, 4900, "05:25 AM"));
         system.addFlight(new Flight("AI107", "Goa", "Mumbai", 4, 4700, "06:50 PM"));
         system.addFlight(new Flight("AI108", "Hyderabad", "Mumbai", 5, 5000, "09:10 AM"));
@@ -380,7 +422,7 @@ public class Main {
         system.addFlight(new Flight("AI217", "Delhi", "Goa", 4, 4600, "06:10 AM"));
         system.addFlight(new Flight("AI218", "Chandigarh", "Goa", 3, 4800, "12:30 PM"));
         system.addFlight(new Flight("AI219", "Jaipur", "Goa", 5, 4700, "07:45 PM"));
-        // Ensure at least two flights to Chandigarh
+
         system.addFlight(new Flight("AI230", "Mumbai", "Chandigarh", 3, 4500, "06:45 AM"));
 
         system.addFlight(new Flight("AI220", "Chandigarh", "Singapore", 3, 17500, "09:30 AM"));
