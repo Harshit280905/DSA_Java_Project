@@ -68,8 +68,9 @@ class FlightNode {
 }
 
 class BookingSystem {
-    private FlightNode head;
-    private Stack<BookingRecord> bookingHistory = new Stack<>();
+    FlightNode head;
+    // Map of username to list of booking records
+    private Map<String, List<BookingRecord>> userBookings = new HashMap<>();
 
     static class BookingRecord {
         Flight flight;
@@ -118,7 +119,7 @@ class BookingSystem {
         return current != null ? current.flight : null;
     }
 
-    public void displayFlightsByType(boolean isInternational) {
+    public void displayFlightsByType(boolean isInternational, String username) {
         if (head == null) {
             System.out.println("No flights available.");
             return;
@@ -234,7 +235,8 @@ class BookingSystem {
                 String passengerLabel = name + " (Passenger " + i + ", Age " + age + ")";
                 int result = selectedFlight.bookSeat(passengerLabel, 1);
                 if (result == 1) {
-                    bookingHistory.push(new BookingRecord(selectedFlight, passengerLabel));
+                    userBookings.computeIfAbsent(username, k -> new ArrayList<>()).add(new BookingRecord(selectedFlight, passengerLabel));
+                    saveUserBookings(username);
                     booked++;
                     totalCost += price;
                     if (age <= 12) children++;
@@ -253,24 +255,116 @@ class BookingSystem {
         System.out.println("Total cost: ₹" + totalCost);
     }
 
-    public boolean bookingHistoryIsEmpty() {
-        return bookingHistory.isEmpty();
+    // Save bookings for a user to a file and append to global bookings.txt
+    public void saveUserBookings(String username) {
+        List<BookingRecord> records = userBookings.get(username);
+        if (records != null) {
+            Set<String> existingLines = new HashSet<>();
+            java.io.File userFile = new java.io.File(username + "_bookings.txt");
+            // Read existing lines to avoid duplicates
+            if (userFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(userFile))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        existingLines.add(line.trim());
+                    }
+                } catch (IOException e) {
+                    System.out.println("Error reading existing user bookings: " + e.getMessage());
+                }
+            }
+            // Append only new records
+            try (FileWriter userWriter = new FileWriter(userFile, true)) {
+                for (BookingRecord record : records) {
+                    String line = record.passengerName + "," + record.flight.flightNumber;
+                    if (!existingLines.contains(line)) {
+                        userWriter.write(line + "\n");
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("Error saving user bookings: " + e.getMessage());
+            }
+
+            // Always append to bookings.txt for global records (as before)
+            try (FileWriter allBookingsWriter = new FileWriter("bookings.txt", true)) {
+                for (BookingRecord record : records) {
+                    String globalLine = "User: " + username + " | Passenger: " + record.passengerName +
+                        " | Flight: " + record.flight.flightNumber +
+                        " | Route: " + record.flight.source + " -> " + record.flight.destination +
+                        " | Departure: " + record.flight.departureTime;
+                    allBookingsWriter.write(globalLine + "\n");
+                }
+            } catch (IOException e) {
+                System.out.println("Error updating bookings.txt: " + e.getMessage());
+            }
+        }
+    }
+    // View all bookings (admin)
+    public void viewAllBookings() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("bookings.txt"))) {
+            String line;
+            System.out.println("\n--- All Bookings ---");
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+        } catch (IOException e) {
+            System.out.println("No bookings have been made yet or unable to read file.");
+        }
     }
 
+    // Load bookings for a user from a file, matching flights from allFlights
+    public void loadUserBookings(String username, List<Flight> allFlights) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(username + "_bookings.txt"))) {
+            String line;
+            List<BookingRecord> records = new ArrayList<>();
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 2) {
+                    String passengerName = parts[0].trim();
+                    String flightNumber = parts[1].trim();
+                    for (Flight f : allFlights) {
+                        if (f.flightNumber.equals(flightNumber)) {
+                            records.add(new BookingRecord(f, passengerName));
+                            break;
+                        }
+                    }
+                }
+            }
+            userBookings.put(username, records);
+        } catch (IOException e) {
+            // No saved bookings; do nothing
+        }
+    }
 
-    public void cancelSpecificBooking() {
-        if (bookingHistory.isEmpty()) {
+    public void viewMyBookings(String username) {
+        List<BookingRecord> records = userBookings.get(username);
+        if (records == null || records.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+
+        System.out.println("Your Bookings:");
+        for (BookingRecord record : records) {
+            System.out.println("Passenger: " + record.passengerName +
+                " | Flight: " + record.flight.flightNumber +
+                " | Route: " + record.flight.source + " -> " + record.flight.destination +
+                " | Departure: " + record.flight.departureTime);
+        }
+    }
+
+    public void cancelSpecificBooking(String username) {
+        List<BookingRecord> records = userBookings.get(username);
+        if (records == null || records.isEmpty()) {
             System.out.println("No bookings to cancel.");
             return;
         }
 
         System.out.println("Select a booking to cancel:");
-        for (int i = 0; i < bookingHistory.size(); i++) {
-            BookingRecord record = bookingHistory.get(i);
+        for (int i = 0; i < records.size(); i++) {
+            BookingRecord record = records.get(i);
             System.out.println((i + 1) + ". Passenger: " + record.passengerName +
-                               " | Flight: " + record.flight.flightNumber +
-                               " | Route: " + record.flight.source + " -> " + record.flight.destination +
-                               " | Departure: " + record.flight.departureTime);
+                " | Flight: " + record.flight.flightNumber +
+                " | Route: " + record.flight.source + " -> " + record.flight.destination +
+                " | Departure: " + record.flight.departureTime);
         }
 
         Scanner scanner = new Scanner(System.in);
@@ -278,49 +372,15 @@ class BookingSystem {
         int choice = scanner.nextInt();
         scanner.nextLine();
 
-        if (choice < 1 || choice > bookingHistory.size()) {
+        if (choice < 1 || choice > records.size()) {
             System.out.println("Invalid choice.");
             return;
         }
 
-        BookingRecord record = bookingHistory.get(choice - 1);
-        System.out.print("Are you sure you want to cancel this booking? (yes/no): ");
-        String confirmation = scanner.nextLine().trim().toLowerCase();
-        if (!confirmation.equals("yes")) {
-            System.out.println("Cancellation aborted.");
-            return;
-        }
-        bookingHistory.remove(choice - 1);
+        BookingRecord record = records.remove(choice - 1);
         record.flight.cancelSeat();
-        System.out.println("Booking canceled:");
-        System.out.println("Passenger: " + record.passengerName);
-        System.out.println("Flight: " + record.flight.flightNumber + " from " +
-                           record.flight.source + " to " + record.flight.destination +
-                           " at " + record.flight.departureTime);
-    }
-
-    public void viewMyBookings() {
-        if (bookingHistory.isEmpty()) {
-            System.out.println("No bookings found.");
-            return;
-        }
-
-        boolean found = false;
-        System.out.println("Your Bookings:");
-        for (BookingRecord record : bookingHistory) {
-            String nameOnly = record.passengerName.split("\\(Passenger")[0].trim().toLowerCase();
-            {
-                System.out.println("Passenger: " + record.passengerName +
-                    " | Flight: " + record.flight.flightNumber +
-                    " | Route: " + record.flight.source + " -> " + record.flight.destination +
-                    " | Departure: " + record.flight.departureTime);
-                found = true;
-            }
-        }
-
-        if (!found) {
-            System.out.println("No matching bookings found.");
-        }
+        System.out.println("Booking canceled for: " + record.passengerName);
+        saveUserBookings(username);
     }
 }
 
@@ -328,7 +388,6 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         BookingSystem system = new BookingSystem();
-        Stack<Integer> bookingHistory = new Stack<>();
 
         // Registration prompt before reading users file
         System.out.print("Do you have an account? (yes/no): ");
@@ -437,6 +496,15 @@ public class Main {
         system.addFlight(new Flight("AI227", "Ahmedabad", "Singapore", 2, 17900, "06:10 AM"));
         system.addFlight(new Flight("AI228", "Chennai", "Singapore", 3, 17100, "10:50 PM"));
 
+        // Prepare allFlights list for loading user bookings
+        List<Flight> allFlights = new ArrayList<>();
+        FlightNode current = system.head;
+        while (current != null) {
+            allFlights.add(current.flight);
+            current = current.next;
+        }
+        system.loadUserBookings(username, allFlights);
+
         while (true) {
             System.out.println("\n--- Flight Booking System ---");
             System.out.println("1. View Domestic Flights");
@@ -444,24 +512,33 @@ public class Main {
             System.out.println("3. View My Booking");
             System.out.println("4. Cancel Last Booking");
             System.out.println("5. Exit");
+            if (username.equals("admin")) {
+                System.out.println("6. View All Bookings (Admin)");
+            }
             System.out.print("Enter your choice: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); 
+            scanner.nextLine();
+
+            // Admin hidden option
+            if (username.equals("admin") && choice == 6) {
+                system.viewAllBookings();
+                continue;
+            }
 
             switch (choice) {
                 case 1:
                     System.out.println("\n--- Domestic Flights ---");
-                    system.displayFlightsByType(false); 
+                    system.displayFlightsByType(false, username); 
                     break;
                 case 2:
                     System.out.println("\n--- International Flights ---");
-                    system.displayFlightsByType(true); 
+                    system.displayFlightsByType(true, username); 
                     break;
                 case 3:
-                    system.viewMyBookings();
+                    system.viewMyBookings(username);
                     break;
                 case 4:
-                    system.cancelSpecificBooking();
+                    system.cancelSpecificBooking(username);
                     break;
                 case 5:
                     System.out.println("Thank you for using the system!");
